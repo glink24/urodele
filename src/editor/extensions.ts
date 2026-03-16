@@ -11,6 +11,30 @@ import StarterKit from "@tiptap/starter-kit";
 import { createLowlightCodeSSRPlugin, hydrate } from "./lowlight.tsx";
 import { createPlaceholderPlugin } from "./placeholder";
 
+const CustomLink = Link.extend({
+  // 可以在这里添加或修改属性逻辑
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      target: {
+        default: '_blank',
+        // 关键点：动态渲染 target 属性
+        renderHTML: attributes => {
+          if (attributes.href?.startsWith('#')) {
+            return {
+              target: null, // 锚点链接不使用 target="_blank"
+            }
+          }
+
+          return {
+            target: attributes.target,
+          }
+        },
+      },
+    }
+  },
+})
+
 export const getBasicExtensions = () => {
   const CustomDocument = Document.extend({
     content: "heading block*",
@@ -24,7 +48,7 @@ export const getBasicExtensions = () => {
     }),
     Heading,
     Image,
-    Link.configure({
+    CustomLink.configure({
       autolink: false,
     }),
     Underline,
