@@ -1,10 +1,20 @@
 import { getLocalUser, setLocalUser, USER_KEY } from "@/shared/storage";
 import { Octokit } from "octokit";
-import config from "urodele.config";
+import { getTargetRepo } from "@/adapter/github";
 
 export const getUserInfo = () => {
   const userInfo = getLocalUser();
   if (!userInfo) {
+    return undefined;
+  }
+  // If the cached identity was authorized for a different repo than the
+  // current URL is targeting, drop the cache and force re-validation.
+  const target = getTargetRepo();
+  if (
+    userInfo.targetRepo &&
+    (userInfo.targetRepo.owner !== target.owner || userInfo.targetRepo.repo !== target.repo)
+  ) {
+    localStorage.removeItem(USER_KEY);
     return undefined;
   }
   login(userInfo.token);
@@ -12,12 +22,13 @@ export const getUserInfo = () => {
 };
 
 export const login = async (token: string) => {
+  const { owner, repo } = getTargetRepo();
   const oc = new Octokit({ auth: token });
   const { data } = await oc.request("GET /user");
-  const { data: repo } = await oc
+  const { data: repoData } = await oc
     .request("GET /repos/{owner}/{repo}", {
-      owner: config.github.login,
-      repo: config.github.repo,
+      owner,
+      repo,
     })
     .catch((error) => {
       console.error(error);
@@ -27,7 +38,7 @@ export const login = async (token: string) => {
         },
       };
     });
-  if (!(repo.permissions as any)?.push) {
+  if (!(repoData.permissions as any)?.push) {
     throw new Error("login user has no permission to push to current repo");
   }
   setLocalUser({
@@ -35,7 +46,8 @@ export const login = async (token: string) => {
     avatar: data.avatar_url,
     login: data.login,
     token: token,
-    permissions: repo.permissions,
+    permissions: repoData.permissions,
+    targetRepo: { owner, repo },
   });
 };
 

@@ -1,6 +1,13 @@
 export const USER_KEY = "user_github";
 
-export type UserInfo = { name: string; avatar: string; token: string; login: string; permissions?: { push?: boolean } };
+export type UserInfo = {
+  name: string;
+  avatar: string;
+  token: string;
+  login: string;
+  permissions?: { push?: boolean };
+  targetRepo?: { owner: string; repo: string };
+};
 
 export const getLocalUser = () => {
   if (typeof window == "undefined") return undefined;

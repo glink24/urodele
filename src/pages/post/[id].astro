@@ -12,6 +12,14 @@ const curIndex = allPosts.findIndex((p) => p.id === post.id);
 const prev = allPosts[curIndex + 1];
 const next = allPosts[curIndex - 1];
 
+const isEditorHost = Boolean(config.github.logInUrl);
+// In dev (FS adapter) or on an editor-host fork, Auth owns the edit button.
+const treatAsEditor = isEditorHost || import.meta.env.DEV;
+const editorHost = (
+  (config as any).editorHost ?? "https://glink25.github.io"
+).replace(/\/$/, "");
+const sharedEditUrl = `${editorHost}/edit/?repo=${config.github.login}/${config.github.repo}&path=${encodeURIComponent(id)}`;
+
 export const getStaticPaths = async () => {
   const posts = await getPageList(false);
   return posts.map((p) => ({
@@ -31,6 +39,19 @@ export const getStaticPaths = async () => {
 </script>
 
 <Layout title={post.title} description={post.intro}>
+  {
+    !treatAsEditor && (
+      <a
+        slot="operations"
+        href={sharedEditUrl}
+        target="_blank"
+        rel="noopener"
+        class="text-button"
+        aria-label="edit current post">
+        <div class="i-ri:quill-pen-fill" />
+      </a>
+    )
+  }
   <main>
     <div class="content">
       <div class="w-full flex gap-2 pb-2">

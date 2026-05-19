@@ -1,6 +1,14 @@
+---
+import config from "urodele.config";
+// Mount Auth on editor hosts in prod, and on any fork in local dev
+// (FS adapter still uses the same UI/edit flow during development).
+const isEditorHost = Boolean(config.github.logInUrl);
+const showAuth = isEditorHost || import.meta.env.DEV;
+---
+
 <script>
   import { mount } from "./index";
   mount("#auth");
 </script>
 
-<div id="auth"></div>
+{showAuth && <div id="auth" />}

@@ -11,6 +11,20 @@ interface Props {
 }
 
 const { posts, page, pages } = Astro.props;
+
+const isEditorHost = Boolean(config.github.logInUrl);
+// In dev (FS adapter) or on an editor-host fork, the Auth component owns
+// the New/Edit buttons and draft listing — don't double up here.
+const treatAsEditor = isEditorHost || import.meta.env.DEV;
+const editorHost = (
+  (config as any).editorHost ?? "https://glink25.github.io"
+).replace(/\/$/, "");
+const draftsEmbed = (config as any).draftsEmbed !== false;
+const target = `${config.github.login}/${config.github.repo}`;
+const sharedNewUrl = `${editorHost}/edit/?repo=${target}&new`;
+const draftsIframeUrl = `${editorHost}/drafts/?repo=${target}`;
+const showDraftsIframe = !treatAsEditor && draftsEmbed;
+const showNewPostButton = !treatAsEditor;
 ---
 
 <script>
@@ -19,11 +33,35 @@ const { posts, page, pages } = Astro.props;
   mount("data-acc-time");
 </script>
 <Layout title={config.head.title}>
+  {
+    showNewPostButton && (
+      <a
+        slot="operations"
+        href={sharedNewUrl}
+        target="_blank"
+        rel="noopener"
+        class="text-button"
+        aria-label="create new post">
+        <div class="i-ri:add-large-line" />
+      </a>
+    )
+  }
   <div class="w-full h-40 bg-black text-white font-bold text-3xl flex items-center justify-center">
     {config.head.brand}
   </div>
   <main>
     <div class="content">
+      {
+        showDraftsIframe && page === 1 && (
+          <iframe
+            src={draftsIframeUrl}
+            class="w-full"
+            style="border:0;min-height:120px"
+            loading="lazy"
+            title="drafts"
+          />
+        )
+      }
       {
         posts.map((item) => (
           <>
